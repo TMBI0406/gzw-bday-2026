@@ -8,6 +8,8 @@ interface CameraRigProps {
   focus: ModalKey | null;
   /** Wird beim ersten Umsehen per Wischen aufgerufen */
   onLook?: () => void;
+  /** Jede neue Zahl: im Hochformat einmal zu den jubelnden Schülern schwenken */
+  cheer?: number;
 }
 
 const MAX_YAW = 0.5;
@@ -18,13 +20,23 @@ const tmpLook = new Vector3();
 const smooth = (x: number) => x * x * (3 - 2 * x);
 
 /** Kameraschwenk im Hochformat, damit man direkt sieht: Der Raum ist größer als der Bildschirm */
-function tourYaw(t: number) {
-  const keys: [number, number][] = [
-    [0, 0],
-    [1.4, 0.4],
-    [3.4, -0.4],
-    [4.6, 0],
-  ];
+const TOUR_KEYS: [number, number][] = [
+  [0, 0],
+  [1.4, 0.4],
+  [3.4, -0.4],
+  [4.6, 0],
+];
+/** Beim Jubeln: zu beiden Schülerreihen schwenken und dort kurz verweilen */
+const CHEER_KEYS: [number, number][] = [
+  [0, 0],
+  [0.6, 0.5],
+  [1.6, 0.5],
+  [2.3, -0.5],
+  [3.3, -0.5],
+  [4.0, 0],
+];
+
+function keyframeYaw(t: number, keys: [number, number][]) {
   if (t <= 0) return 0;
   for (let i = 1; i < keys.length; i++) {
     const [t1, v1] = keys[i];
@@ -44,7 +56,7 @@ function verticalFov(aspect: number) {
  * Steuert die Kamera: Hereinfahren durch die Tür, Umsehen per Wischen/Ziehen,
  * leichte Mausparallaxe und das Heranfliegen an angeklickte Objekte.
  */
-export default function CameraRig({ focus, onLook }: CameraRigProps) {
+export default function CameraRig({ focus, onLook, cheer = 0 }: CameraRigProps) {
   const camera = useThree((s) => s.camera) as PerspectiveCamera;
   const gl = useThree((s) => s.gl);
   const size = useThree((s) => s.size);
@@ -55,6 +67,8 @@ export default function CameraRig({ focus, onLook }: CameraRigProps) {
   const pointer = useRef({ x: 0, y: 0 });
   const tour = useRef(true);
   const startTime = useRef<number | null>(null);
+  const cheerSeen = useRef(cheer);
+  const sweepStart = useRef<number | null>(null);
   const onLookRef = useRef(onLook);
   onLookRef.current = onLook;
 
@@ -121,8 +135,17 @@ export default function CameraRig({ focus, onLook }: CameraRigProps) {
     const elapsed = state.clock.elapsedTime - startTime.current;
 
     if (focus) tour.current = false;
+    if (cheer !== cheerSeen.current) {
+      cheerSeen.current = cheer;
+      if (aspect < 0.9 && !focus) sweepStart.current = elapsed;
+    }
+    if (sweepStart.current !== null) {
+      const e = elapsed - sweepStart.current;
+      if (e < 4.0 && !focus) targetYaw.current = keyframeYaw(e, CHEER_KEYS);
+      else sweepStart.current = null;
+    }
     if (tour.current && aspect < 0.9) {
-      targetYaw.current = tourYaw(elapsed - 1.6);
+      targetYaw.current = keyframeYaw(elapsed - 1.6, TOUR_KEYS);
       if (elapsed > 6.5) tour.current = false;
     }
     yaw.current = MathUtils.damp(yaw.current, targetYaw.current, 4, delta);

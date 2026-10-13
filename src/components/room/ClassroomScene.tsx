@@ -89,7 +89,7 @@ export default function ClassroomScene({ focus, visited, paused, onSelect, onCak
         noise={0.6}
       />
 
-      <CameraRig focus={focus} onLook={onLook} />
+      <CameraRig focus={focus} onLook={onLook} cheer={cheer} />
       {!lowPower && <ShadowSetup />}
       </LabelLayer.Provider>
     </Canvas>

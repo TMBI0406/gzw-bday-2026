@@ -32,7 +32,7 @@ const STUDENTS: Look[] = [
 ];
 
 /** So lange jubeln die Schüler (Sekunden) */
-const CHEER_SECONDS = 3.6;
+const CHEER_SECONDS = 4.2;
 
 /** Ein paar Schüler, die an ihren Tischen sitzen (mit Blick zur Tafel).
     Jede neue Zahl in `cheer` lässt alle aufspringen, sich umdrehen und jubeln. */
